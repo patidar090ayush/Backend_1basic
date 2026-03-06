@@ -1,49 +1,38 @@
 const express = require("express");
+const { connectDB } = require("./src/db/db");
+const noteModel = require("./src/modles/note.model");
 
 const app = express();
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json());
 
-let notes = []; // In-memory storage for notes
-
-app.get('/notes',(req,res)=>{
-    res.send(notes);
+app.post("/notes", async (req, res) => {
+  const { title, content } = req.body;
+  console.log("Received note:", title, content);
+  await noteModel.create({ title, content });
+  // res.send("Note created successfully!");
+  res.json({ message: "Note created successfully!" });
 });
 
-// Create a Api notes -> {title,content}
-
-app.post('/notes',(req,res)=>{
-    // const {title,content} = req.body;
-    console.log(req.body);
-    notes.push(req.body);
-    res.json({message:'Note added successfully'});
+app.get("/notes", async (req, res) => {
+  const notes = await noteModel.find();
+  res.json({ message: "Notes retrieved successfully!", notes });
 });
 
-// Delete a note by index
-
-app.delete('/notes/:index',(req,res)=>{
-    const index = parseInt(req.params.index);
-    // if(index >= 0 && index < notes.length){
-    //     notes.splice(index,1);
-    //     res.json({message:'Note deleted successfully'});
-    // }else{
-    //     res.status(404).json({message:'Note not found'});
-    // }
-
-    delete notes[index];
-    res.json({message:'Note deleted successfully'});
+app.delete("/notes/:id", async (req, res) => {
+  const { id } = req.params;
+  await noteModel.findByIdAndDelete( id );
+  res.json({ message: "Note deleted successfully!" });
 });
 
 
-// Update a note by index use Patch/notes/:index => {title,content}
+app.patch("/notes/:id", async (req, res) => {
+  const { id } = req.params;
+  const { title, content } = req.body;
+  await noteModel.findByIdAndUpdate( id, { title:title , content:content } );
+  res.json({ message: "Note updated successfully!" });
+});
 
-app.patch('/notes/:index',(req,res)=>{
-    const index = req.params.index
-    const {title} = req.body;
-
-    notes[index].title = title;
-    res.json({message:'Note updated successfully'});
-})
-
-app.listen(3000,()=>{
-    console.log('Server is running on port 3000');
-})
+connectDB();
+app.listen(3000, () => {
+  console.log("Server is running on port 3000");
+});
